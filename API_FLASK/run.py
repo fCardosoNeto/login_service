@@ -15,7 +15,7 @@ bcrypt = Bcrypt(app)
 secret = "***************"
 
 mongo = MongoClient('localhost', 27017)
-db = mongo['py_api'] #py_api name db
+db = mongo['py_api'] #py_api nome do banco
 
 def tokenReq(f):
     @wraps(f)
@@ -31,111 +31,6 @@ def tokenReq(f):
             return jsonify({"status": "fail", "message": "não autorizado"}), 401
     return decorated
 
-@app.route('/')
-def func():
-    return "200"
-
-# get all and insert one
-@app.route('/todos', methods=['GET', 'POST'])
-def index():
-    res = []
-    code = 500
-    status = "fail"
-    message = ""
-    try:
-        if (request.method == 'POST'):
-            res = db['todos'].insert_one(request.get_json())
-            if res.acknowledged:
-                message = "item saved"
-                status = 'successful'
-                code = 201
-                res = {"_id": f"{res.inserted_id}"}
-            else:
-                message = "insert error"
-                res = 'fail'
-                code = 500
-        else:
-            for r in db['todos'].find().sort("_id", -1):
-                r['_id'] = str(r['_id'])
-                res.append(r)
-            if res:
-                message = "todos retrieved"
-                status = 'successful'
-                code = 200
-            else:
-                message = "no todos found"
-                status = 'successful'
-                code = 200
-    except Exception as ee:
-        res = {"error": str(ee)}
-    return jsonify({"status":status,'data': res, "message":message}), code
-
-# get one and update one
-@app.route('/delete/<item_id>', methods=['DELETE'])
-@tokenReq
-def delete_one(item_id):
-    data = {}
-    code = 500
-    message = ""
-    status = "fail"
-    try:
-        if (request.method == 'DELETE'):
-            res = db['todos'].delete_one({"_id": ObjectId(item_id)})
-            if res:
-                message = "Delete successfully"
-                status = "successful"
-                code = 201
-            else:
-                message = "Delete failed"
-                status = "fail"
-                code = 404
-        else:
-            message = "Delete Method failed"
-            status = "fail"
-            code = 404
-           
-    except Exception as ee:
-        message =  str(ee)
-        status = "Error"
-
-    return jsonify({"status": status, "message":message,'data': data}), code
-
-# get one and update one
-@app.route('/getone/<item_id>', methods=['GET', 'POST'])
-@tokenReq
-def by_id(item_id):
-    data = {}
-    code = 500
-    message = ""
-    status = "fail"
-    try:
-        if (request.method == 'POST'):
-            res = db['todos'].update_one({"_id": ObjectId(item_id)}, { "$set": request.get_json()})
-            if res:
-                message = "updated successfully"
-                status = "successful"
-                code = 201
-            else:
-                message = "update failed"
-                status = "fail"
-                code = 404
-        else:
-            data =  db['todos'].find_one({"_id": ObjectId(item_id)})
-            data['_id'] = str(data['_id'])
-            if data:
-                message = "item found"
-                status = "successful"
-                code = 200
-            else:
-                message = "update failed"
-                status = "fail"
-                code = 404
-    except Exception as ee:
-        message =  str(ee)
-        status = "Error"
-
-    return jsonify({"status": status, "message":message,'data': data}), code
-
 @app.route('/signup', methods=['POST'])
 def save_user():
     message = ""
@@ -143,13 +38,13 @@ def save_user():
     status = "fail"
     try:
         data = request.get_json()
-        check = db['users'].find({"email": data['email']})
+        check = db['users'].find({"login": data['login']})
         if check.count() >= 1:
-            message = "user with that email exists"
+            message = "user with that login exists"
             code = 401
             status = "fail"
         else:
-            # hashing the password so it's not stored in the db as it was 
+            # hashing the password so it's not stored in the db as it was
             data['password'] = bcrypt.generate_password_hash(data['password']).decode('utf-8')
             data['created'] = datetime.now()
 
@@ -173,15 +68,14 @@ def login():
     status = "fail"
     try:
         data = request.get_json()
-        user = db['users'].find_one({"email": f'{data["email"]}'})
-
+        user = db['users'].find_one({"login": f'{data["login"]}'})
         if user:
             user['_id'] = str(user['_id'])
             if user and bcrypt.check_password_hash(user['password'], data['password']):
                 time = datetime.utcnow() + timedelta(hours=24)
                 token = jwt.encode({
                         "user": {
-                            "email": f"{user['email']}",
+                            "login": f"{user['login']}",
                             "id": f"{user['_id']}",
                         },
                         "exp": time
@@ -211,5 +105,5 @@ def login():
     return jsonify({'status': status, "data": res_data, "message":message}), code
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port='8000')
+    app.run(debug=True, host='0.0.0.0', port='5007')
 
