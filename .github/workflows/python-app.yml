@@ -22,4 +22,4 @@ jobs:
         pip install -r requirements.txt;
     - name: Execução de Teste de unidades
       run: |
-        python -m unittest src.tests.model_test
+        python -m unittest src.tests.app_test
