@@ -4,7 +4,7 @@ from unittest import TestCase
 
 class AppTest(TestCase):
   def test_validate_params(self):
-    valid_user = {'login': 'teste', 'password': 'teste'}
+    valid_user = {'login': 'teste' }
     invalid_user = {'login': 'errado'}
     self.assertTrue(validate_params(valid_user))
     self.assertFalse(validate_params(invalid_user))
